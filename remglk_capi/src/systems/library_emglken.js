@@ -3,7 +3,7 @@
 Emglken JS library
 ==================
 
-Copyright (c) 2025 Dannii Willis
+Copyright (c) 2026 Dannii Willis
 MIT licenced
 https://github.com/curiousdannii/emglken
 
@@ -132,6 +132,13 @@ const EMGLKEN_JS = {
 
     emglken_get_local_tz() {
         return new Date().getTimezoneOffset() * -60
+    },
+
+    emglken_get_timestamp__deps: ['$writeI53ToI64'],
+    emglken_get_timestamp(result_ptr) {
+        // Frankenstein together a timestamp for Glk from JS's wall clock and high precision timer functions
+        {{{ makeSetValue('result_ptr', 0, 'Date.now() / 1000', 'i53') }}}
+        {{{ makeSetValue('result_ptr', 8, '(performance.now() * 1000) % 1000000', 'i32') }}}
     },
 
     emglken_send_glkote_update(update_ptr, update_len) {

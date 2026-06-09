@@ -3,7 +3,7 @@
 Emglken system
 ==============
 
-Copyright (c) 2025 Dannii Willis
+Copyright (c) 2026 Dannii Willis
 MIT licenced
 https://github.com/curiousdannii/remglk-rs
 
@@ -14,7 +14,6 @@ use std::mem::MaybeUninit;
 use std::path::PathBuf;
 use std::slice;
 use std::sync::LazyLock;
-use std::time::SystemTime;
 
 use jiff::Timestamp;
 use jiff::tz::{Offset, TimeZone};
@@ -41,6 +40,7 @@ extern "C" {
     fn emglken_get_dirs(buffer: *mut EmglkenBuffer);
     fn emglken_get_glkote_event(buffer: *mut EmglkenBuffer);
     fn emglken_get_local_tz() -> i32;
+    fn emglken_get_timestamp(timestamp: *mut EmglkenTimestamp);
     fn emglken_send_glkote_update(update_ptr: *const u8, update_len: usize);
     fn emglken_set_storyfile_dir(path_ptr: *const u8, path_len: usize, buffer: *mut EmglkenBuffer);
 }
@@ -156,8 +156,10 @@ impl GlkSystem for EmglkenSystem {
     }
 
     fn get_now() -> Timestamp {
-        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-        Timestamp::new(now.as_secs() as i64, now.subsec_nanos() as i32).unwrap()
+        let mut timestamp: MaybeUninit<EmglkenTimestamp> = MaybeUninit::uninit();
+        unsafe {emglken_get_timestamp(timestamp.as_mut_ptr())};
+        let timestamp = unsafe {timestamp.assume_init()};
+        Timestamp::new(timestamp.secs, timestamp.microsecs * 1000).unwrap()
     }
 
     fn set_base_file(dirs: &mut Directories, path: String) {
@@ -194,6 +196,12 @@ struct EmglkenDirectories {
 struct EmglkenSetBaseFileDirectories {
     pub storyfile: Option<String>,
     pub working: Option<String>,
+}
+
+#[repr(C)]
+pub struct EmglkenTimestamp {
+    pub secs: i64,
+    pub microsecs: i32,
 }
 
 fn buffer_to_boxed_slice(buffer: MaybeUninit<EmglkenBuffer>) -> Box<[u8]> {
