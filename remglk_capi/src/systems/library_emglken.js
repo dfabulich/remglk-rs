@@ -136,9 +136,11 @@ const EMGLKEN_JS = {
 
     emglken_get_timestamp__deps: ['$writeI53ToI64'],
     emglken_get_timestamp(result_ptr) {
-        // Frankenstein together a timestamp for Glk from JS's wall clock and high precision timer functions
-        {{{ makeSetValue('result_ptr', 0, 'Date.now() / 1000', 'i53') }}}
-        {{{ makeSetValue('result_ptr', 8, '(performance.now() * 1000) % 1000000', 'i32') }}}
+        // In Node we can rely on the performance API, but in browsers it stops ticking if the page is paused so we'll need use the lower resolution Date.now()
+        // With a 64bit float and microsecond detail, this should be safe until 2255
+        const timestamp = ENVIRONMENT_IS_NODE ? (performance.timeOrigin + performance.now()) : Date.now()
+        {{{ makeSetValue('result_ptr', 0, 'timestamp / 1000', 'i53') }}}
+        {{{ makeSetValue('result_ptr', 8, '(timestamp * 1000) % 1000000', 'i32') }}}
     },
 
     emglken_send_glkote_update(update_ptr, update_len) {
