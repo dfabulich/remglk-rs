@@ -96,6 +96,8 @@ pub struct InitEvent {
     pub metrics: Box<Metrics>,
     /** Capabilities list */
     pub support: Vec<String>,
+    /** Timezone offset in minutes (UTC+10 = `600`) */
+    pub tzoffset: Option<i32>,
 }
 
 /** Line (text) event */

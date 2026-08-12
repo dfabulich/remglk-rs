@@ -93,6 +93,7 @@ extern "C" fn main(argc: c_int, argv: *const *const c_char) -> c_int {
                     "hyperlinks".to_string(),
                     "timer".to_string(),
                 ],
+                tzoffset: None,
             }),
             gen: 0,
             partial: None,

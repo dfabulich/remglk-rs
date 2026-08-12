@@ -110,7 +110,7 @@ pub extern "C" fn glk_current_time(time_ptr: *mut GlkTime) {
 
 #[no_mangle]
 pub extern "C" fn glk_date_to_simple_time_local(date_ptr: *const GlkDate, factor: u32) -> i32 {
-    GlkApi::glk_date_to_simple_time_local(unsafe{&(*date_ptr)}, factor)
+    GLKAPI.lock().unwrap().glk_date_to_simple_time_local(unsafe{&(*date_ptr)}, factor)
 }
 
 #[no_mangle]
@@ -120,7 +120,7 @@ pub extern "C" fn glk_date_to_simple_time_utc(date_ptr: *const GlkDate, factor: 
 
 #[no_mangle]
 pub extern "C" fn glk_date_to_time_local(date_ptr: *const GlkDate, time_ptr: *mut GlkTime) {
-    let time = GlkApi::glk_date_to_time_local(unsafe{&(*date_ptr)});
+    let time = GLKAPI.lock().unwrap().glk_date_to_time_local(unsafe{&(*date_ptr)});
     write_ptr(time_ptr, time);
 }
 
@@ -486,7 +486,7 @@ pub extern "C" fn glk_set_window(win: WindowPtr) {
 
 #[no_mangle]
 pub extern "C" fn glk_simple_time_to_date_local(time: i32, factor: u32, date_ptr: *mut GlkDate) {
-    let date = GlkApi::glk_simple_time_to_date_local(time, factor);
+    let date = GLKAPI.lock().unwrap().glk_simple_time_to_date_local(time, factor);
     write_ptr(date_ptr, date);
 }
 
@@ -610,7 +610,7 @@ pub extern "C" fn glk_tick() {}
 
 #[no_mangle]
 pub extern "C" fn glk_time_to_date_local(time_ptr: *const GlkTime, date_ptr: *mut GlkDate) {
-    let date = GlkApi::glk_time_to_date_local(unsafe{&(*time_ptr)});
+    let date = GLKAPI.lock().unwrap().glk_time_to_date_local(unsafe{&(*time_ptr)});
     write_ptr(date_ptr, date);
 }
 
