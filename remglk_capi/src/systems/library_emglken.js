@@ -110,7 +110,7 @@ const EMGLKEN_JS = {
 
     emglken_file_write_buffer(path_ptr, path_len, buf_ptr, buf_len) {
         const path = UTF8ToString(path_ptr, path_len)
-        const data = HEAP8.subarray(buf_ptr, buf_ptr + buf_len)
+        const data = HEAPU8.subarray(buf_ptr, buf_ptr + buf_len)
         emglken_files[path] = data
     },
 
@@ -167,7 +167,7 @@ const EMGLKEN_JS = {
 
     $writeBuffer(buffer, data) {
         const ptr = _malloc(data.length)
-        HEAP8.set(data, ptr)
+        HEAPU8.set(data, ptr)
         {{{ makeSetValue('buffer', 0, 'ptr', 'i32') }}}
         {{{ makeSetValue('buffer', 4, 'data.length', 'i32') }}}
     },
