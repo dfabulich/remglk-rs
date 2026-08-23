@@ -762,6 +762,226 @@ pub extern "C" fn garglk_set_zcolors_stream(str: StreamPtr, fg: u32, bg: u32) {
     GlkApi::garglk_set_zcolors_stream(&mut lock!(from_ptr(str, "garglk_set_zcolors_stream")), fg, bg);
 }
 
+#[repr(C)]
+struct GlkMapPoint {
+    x: i32,
+    y: i32,
+}
+
+#[repr(C)]
+struct GlkMapHyperlink {
+    id: u32,
+    label: *const c_char,
+    npoints: u32,
+    points: *const GlkMapPoint,
+}
+
+unsafe fn read_map_hyperlinks(
+    hyperlinks: *const GlkMapHyperlink,
+    nhyperlinks: u32,
+) -> Vec<glkapi::map::MapHyperlinkArg> {
+    if hyperlinks.is_null() || nhyperlinks == 0 {
+        return vec![];
+    }
+    let mut out = Vec::new();
+    for i in 0..nhyperlinks.min(64) {
+        let h = &*hyperlinks.add(i as usize);
+        if h.id == 0 || h.npoints < 3 || h.npoints > 32 || h.points.is_null() {
+            continue;
+        }
+        let mut points = Vec::with_capacity(h.npoints as usize);
+        for p in 0..h.npoints {
+            let pt = &*h.points.add(p as usize);
+            points.push(glkapi::protocol::MapPoint { x: pt.x, y: pt.y });
+        }
+        let label = if h.label.is_null() {
+            None
+        } else {
+            Some(std::ffi::CStr::from_ptr(h.label).to_string_lossy().into_owned())
+        };
+        out.push(glkapi::map::MapHyperlinkArg {
+            id: h.id,
+            label,
+            points,
+        });
+    }
+    out
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_present_svg(
+    data: BufferU8Ptr,
+    len: u32,
+    bgcolor: u32,
+    focusleft: i32,
+    focustop: i32,
+    focuswidth: u32,
+    focusheight: u32,
+    hyperlinks: *const GlkMapHyperlink,
+    nhyperlinks: u32,
+) -> u32 {
+    let bytes = if data.is_null() || len == 0 {
+        &[][..]
+    } else {
+        glk_buffer(data, len)
+    };
+    let links = unsafe { read_map_hyperlinks(hyperlinks, nhyperlinks) };
+    GLKAPI.lock().unwrap().glk_map_present_svg(
+        bytes,
+        bgcolor,
+        focusleft,
+        focustop,
+        focuswidth,
+        focusheight,
+        &links,
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_present_image(
+    image: u32,
+    bgcolor: u32,
+    focusleft: i32,
+    focustop: i32,
+    focuswidth: u32,
+    focusheight: u32,
+    hyperlinks: *const GlkMapHyperlink,
+    nhyperlinks: u32,
+) -> u32 {
+    let links = unsafe { read_map_hyperlinks(hyperlinks, nhyperlinks) };
+    GLKAPI.lock().unwrap().glk_map_present_image(
+        image,
+        bgcolor,
+        focusleft,
+        focustop,
+        focuswidth,
+        focusheight,
+        &links,
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_set_hyperlinks(hyperlinks: *const GlkMapHyperlink, nhyperlinks: u32) {
+    let links = unsafe { read_map_hyperlinks(hyperlinks, nhyperlinks) };
+    GLKAPI.lock().unwrap().glk_map_set_hyperlinks(&links);
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_overlay(
+    image: u32,
+    left: i32,
+    top: i32,
+    width: u32,
+    height: u32,
+    zindex: u32,
+    link_id: u32,
+    linklabel: *const c_char,
+) -> u32 {
+    let label = if linklabel.is_null() {
+        None
+    } else {
+        Some(unsafe { std::ffi::CStr::from_ptr(linklabel).to_string_lossy().into_owned() })
+    };
+    GLKAPI.lock().unwrap().glk_map_overlay(image, left, top, width, height, zindex, link_id, label)
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_overlay_svg(
+    data: *const u8,
+    len: u32,
+    left: i32,
+    top: i32,
+    width: u32,
+    height: u32,
+    zindex: u32,
+    link_id: u32,
+    linklabel: *const c_char,
+) -> u32 {
+    let svg = if data.is_null() || len == 0 {
+        &[][..]
+    } else {
+        unsafe { std::slice::from_raw_parts(data, len as usize) }
+    };
+    let label = if linklabel.is_null() {
+        None
+    } else {
+        Some(unsafe { std::ffi::CStr::from_ptr(linklabel).to_string_lossy().into_owned() })
+    };
+    GLKAPI.lock().unwrap().glk_map_overlay_svg(svg, left, top, width, height, zindex, link_id, label)
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_fill_rect(
+    color: u32,
+    left: i32,
+    top: i32,
+    width: u32,
+    height: u32,
+    zindex: u32,
+) -> u32 {
+    GLKAPI.lock().unwrap().glk_map_fill_rect(color, left, top, width, height, zindex)
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_overlay_move(
+    overlay: u32,
+    left: i32,
+    top: i32,
+    width: u32,
+    height: u32,
+    zindex: u32,
+) -> u32 {
+    GLKAPI.lock().unwrap().glk_map_overlay_move(overlay, left, top, width, height, zindex)
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_overlay_clear(overlay: u32) -> u32 {
+    GLKAPI.lock().unwrap().glk_map_overlay_clear(overlay)
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_overlay_clear_all() -> u32 {
+    GLKAPI.lock().unwrap().glk_map_overlay_clear_all()
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_close() {
+    GLKAPI.lock().unwrap().glk_map_close();
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_get_visibility() -> u32 {
+    GLKAPI.lock().unwrap().glk_map_get_visibility()
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_show_at_user_request() {
+    GLKAPI.lock().unwrap().glk_map_show_at_user_request();
+}
+
+#[no_mangle]
+pub extern "C" fn glk_request_map_event() {
+    GLKAPI.lock().unwrap().glk_request_map_event();
+}
+
+#[no_mangle]
+pub extern "C" fn glk_cancel_map_event() {
+    GLKAPI.lock().unwrap().glk_cancel_map_event();
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_set_focus(focusleft: i32, focustop: i32, focuswidth: u32, focusheight: u32) {
+    GLKAPI
+        .lock()
+        .unwrap()
+        .glk_map_set_focus(focusleft, focustop, focuswidth, focusheight);
+}
+
+#[no_mangle]
+pub extern "C" fn glk_map_clear_focus() {
+    GLKAPI.lock().unwrap().glk_map_clear_focus();
+}
+
 /** A Glk event */
 #[derive(Clone, Copy)]
 #[repr(C)]

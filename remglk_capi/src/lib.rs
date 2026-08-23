@@ -91,6 +91,7 @@ extern "C" fn main(argc: c_int, argv: *const *const c_char) -> c_int {
                     "graphics".to_string(),
                     "graphicswin".to_string(),
                     "hyperlinks".to_string(),
+                    "map".to_string(),
                     "timer".to_string(),
                 ],
                 tzoffset: None,

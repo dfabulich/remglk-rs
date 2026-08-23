@@ -13,6 +13,7 @@ mod arrays;
 mod common;
 pub mod constants;
 mod filerefs;
+pub mod map;
 pub mod objects;
 pub mod protocol;
 mod protocol_impl;
@@ -69,6 +70,7 @@ where S: Default + GlkSystem {
     gen: u32,
     #[default(TimeZone::UTC)]
     local_tz: TimeZone,
+    map: map::MapState,
     metrics: NormalisedMetrics,
     partial_inputs: PartialInputs,
     pub retain_array_callbacks_u8: Option<RetainArrayCallbacks<u8>>,
@@ -330,6 +332,10 @@ where S: Default + GlkSystem {
             gestalt_GarglkText | gestalt_Stylehints => self.support.garglktext as u32,
 
             gestalt_ExtraStyles => 1,
+            gestalt_Map => match val {
+                0 | 1 => self.support.map as u32,
+                _ => 0,
+            },
 
             _ => 0,
         }
@@ -1292,6 +1298,7 @@ where S: Default + GlkSystem {
                         "graphics" => self.support.graphics = true,
                         "graphicsext" => self.support.graphicsext = true,
                         "hyperlinks" => self.support.hyperlinks = true,
+                        "map" => self.support.map = true,
                         "sounds" => self.support.sounds = true,
                         "timer" => self.support.timers = true,
                         _ => {},
@@ -1375,6 +1382,18 @@ where S: Default + GlkSystem {
                     if let Some(TextInputType::Line) = win.input.text_input_type {
                         glkevent = self.handle_line_input(&mut win, &data.value, data.terminator)?;
                     }
+                }
+            },
+
+            EventData::Map(data) => {
+                if self.map.event_pending {
+                    self.map.event_pending = false;
+                    glkevent = GlkEvent {
+                        evtype: GlkEventType::Map,
+                        val1: data.subtype,
+                        val2: data.value,
+                        ..Default::default()
+                    };
                 }
             },
 
@@ -1495,6 +1514,11 @@ where S: Default + GlkSystem {
         if self.timer.last_interval != self.timer.interval {
             state.timer = Some(self.timer.interval);
             self.timer.last_interval = self.timer.interval;
+        }
+
+        if self.map.changed {
+            self.map.changed = false;
+            state.map = self.map.pending.take();
         }
 
         // TODO: Autorestore state
@@ -2017,6 +2041,7 @@ struct SupportedFeatures {
     graphics: bool,
     graphicsext: bool,
     hyperlinks: bool,
+    map: bool,
     sounds: bool,
     timers: bool,
 }

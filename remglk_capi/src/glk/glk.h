@@ -479,4 +479,57 @@ extern void garglk_set_zcolors_stream(strid_t str, glui32 fg, glui32 bg);
 extern void garglk_set_reversevideo(glui32 reverse);
 extern void garglk_set_reversevideo_stream(strid_t str, glui32 reverse);
 
+#define GLK_MODULE_MAP
+
+#ifdef GLK_MODULE_MAP
+
+#define mapcolor_Default 0xFFFFFFFFu
+
+typedef glui32 overlayid_t;
+
+typedef struct glk_mappoint_struct {
+    glsi32 x, y;
+} glk_mappoint_t;
+
+typedef struct glk_maphyperlink_struct {
+    glui32 id;
+    const char *label;
+    glui32 npoints;
+    const glk_mappoint_t *points;
+} glk_maphyperlink_t;
+
+#define gestalt_Map (0x1104)
+#define evtype_Map (0x1105)
+#define mapevent_Hyperlink (1)
+#define mapevent_UserHide (2)
+
+extern glui32 glk_map_present_svg(const unsigned char *data, glui32 len,
+    glui32 bgcolor,
+    glsi32 focusleft, glsi32 focustop, glui32 focuswidth, glui32 focusheight,
+    const glk_maphyperlink_t *hyperlinks, glui32 nhyperlinks);
+extern glui32 glk_map_present_image(glui32 image, glui32 bgcolor,
+    glsi32 focusleft, glsi32 focustop, glui32 focuswidth, glui32 focusheight,
+    const glk_maphyperlink_t *hyperlinks, glui32 nhyperlinks);
+extern void glk_map_set_hyperlinks(const glk_maphyperlink_t *hyperlinks, glui32 nhyperlinks);
+extern overlayid_t glk_map_overlay(glui32 image, glsi32 left, glsi32 top,
+    glui32 width, glui32 height, glui32 zindex, glui32 link_id, const char *linklabel);
+extern overlayid_t glk_map_overlay_svg(const unsigned char *data, glui32 len,
+    glsi32 left, glsi32 top, glui32 width, glui32 height, glui32 zindex,
+    glui32 link_id, const char *linklabel);
+extern overlayid_t glk_map_fill_rect(glui32 color, glsi32 left, glsi32 top,
+    glui32 width, glui32 height, glui32 zindex);
+extern glui32 glk_map_overlay_move(overlayid_t overlay, glsi32 left, glsi32 top,
+    glui32 width, glui32 height, glui32 zindex);
+extern glui32 glk_map_overlay_clear(overlayid_t overlay);
+extern glui32 glk_map_overlay_clear_all(void);
+extern void glk_map_close(void);
+extern glui32 glk_map_get_visibility(void);
+extern void glk_map_show_at_user_request(void);
+extern void glk_map_set_focus(glsi32 focusleft, glsi32 focustop, glui32 focuswidth, glui32 focusheight);
+extern void glk_map_clear_focus(void);
+extern void glk_request_map_event(void);
+extern void glk_cancel_map_event(void);
+
+#endif /* GLK_MODULE_MAP */
+
 #endif /* GLK_H */

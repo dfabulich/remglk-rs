@@ -46,6 +46,7 @@ pub enum EventData {
     Hyperlink(HyperlinkEvent),
     Init(InitEvent),
     Line(LineEvent),
+    Map(MapEvent),
     Mouse(MouseEvent),
     Redraw(RedrawEvent),
     Refresh(RefreshEvent),
@@ -111,6 +112,12 @@ pub struct LineEvent {
     pub value: String,
     /** Window ID */
     pub window: u32,
+}
+
+#[derive(Deserialize)]
+pub struct MapEvent {
+    pub subtype: u32,
+    pub value: u32,
 }
 
 #[derive(Deserialize)]
@@ -322,6 +329,9 @@ pub struct StateUpdate {
     /** Windows with active input */
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub input: Vec<InputUpdate>,
+    /** Map document update (outside the Glk window tree) */
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub map: Option<MapUpdate>,
     /** Background colour for the page margin (ie, outside of the gameport); blank means remove the current background colour */
     #[serde(skip_serializing_if = "Option::is_none")]
     pub page_margin_bg: Option<Option<String>>,
@@ -337,6 +347,96 @@ pub struct StateUpdate {
     /** Updates to window (new windows, or changes to their arrangements) */
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub windows: Vec<WindowUpdate>,
+}
+
+/** Focus rectangle in map document coordinates */
+#[derive(Clone, Default, Serialize)]
+pub struct MapFocus {
+    pub left: i32,
+    pub top: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Clone, Default, Serialize)]
+pub struct MapPoint {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Clone, Default, Serialize)]
+pub struct MapHyperlink {
+    pub id: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    pub points: Vec<MapPoint>,
+}
+
+#[derive(Clone, Default, Serialize)]
+pub struct MapOverlay {
+    pub id: u32,
+    pub zindex: u32,
+    pub left: i32,
+    pub top: i32,
+    pub width: u32,
+    pub height: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub svg: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link_id: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link_label: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
+pub struct MapPresent {
+    pub format: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bgcolor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub focus: Option<MapFocus>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hyperlinks: Option<Vec<MapHyperlink>>,
+}
+
+#[derive(Clone, Serialize)]
+pub struct MapOverlayMove {
+    pub id: u32,
+    pub left: i32,
+    pub top: i32,
+    pub width: u32,
+    pub height: u32,
+    pub zindex: u32,
+}
+
+/** Map document update */
+#[derive(Clone, Default, Serialize)]
+pub struct MapUpdate {
+    #[serde(skip_serializing_if = "Not::not")]
+    pub clear: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub present: Option<MapPresent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub focus: Option<Option<MapFocus>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hyperlinks: Option<Vec<MapHyperlink>>,
+    /** Overlays created this turn (batched until select). */
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub overlays: Vec<MapOverlay>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub overlay_moves: Vec<MapOverlayMove>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub overlay_clears: Vec<u32>,
+    #[serde(skip_serializing_if = "Not::not")]
+    pub overlay_clear_all: bool,
 }
 
 // Update structures

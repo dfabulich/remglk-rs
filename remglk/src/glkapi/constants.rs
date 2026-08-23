@@ -132,6 +132,11 @@ pub const evtype_Redraw: u32 = 6;
 pub const evtype_SoundNotify: u32 = 7;
 pub const evtype_Hyperlink: u32 = 8;
 pub const evtype_VolumeNotify: u32 = 9;
+pub const evtype_Map: u32 = 0x1105;
+
+pub const mapcolor_Default: u32 = 0xFFFFFFFF;
+
+pub const gestalt_Map: u32 = 0x1104;
 #[derive(Clone, Copy, Default, PartialEq)]
 #[repr(C)]
 pub enum GlkEventType {
@@ -146,6 +151,7 @@ pub enum GlkEventType {
     SoundNotify,
     Hyperlink,
     VolumeNotify,
+    Map = 0x1105,
 }
 
 pub const style_Normal: u32 = 0;
